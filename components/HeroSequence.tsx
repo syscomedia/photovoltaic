@@ -12,36 +12,41 @@ export default function HeroSequence() {
   const { wrapRef, canvasRef, progress, ready } = useScrub(
     HERO_SEQ.prefix,
     HERO_SEQ.count,
-    { prefixMobile: HERO_SEQ.prefixMobile, zoom: 0.07 }
+    { prefixMobile: HERO_SEQ.prefixMobile, zoom: 0.06 }
   );
   const p = progress;
-  const phase = p >= HERO_SEQ.gate ? 2 : p >= 0.14 ? 1 : 0;
+  const { spark, chain, gate, dawn } = HERO_SEQ;
 
+  /* Décharge plein écran à l'embrasement */
   const surged = useRef(false);
   useEffect(() => {
-    if (phase === 2 && !surged.current) {
+    if (p >= gate && p < dawn && !surged.current) {
       surged.current = true;
       window.dispatchEvent(new CustomEvent("helia:surge"));
     }
-    if (phase < 2) surged.current = false;
-  }, [phase]);
+    if (p < gate) surged.current = false;
+  }, [p, gate, dawn]);
 
-  const volts = Math.round(12 + ease(clamp(p / HERO_SEQ.gate)) * 388);
-  const kw = (ease(clamp((p - 0.08) / 0.8)) * 247.5).toFixed(1);
-  const hz = (ease(clamp(p / HERO_SEQ.gate)) * 50).toFixed(1);
+  /* HUD */
+  const volts = Math.round(12 + ease(clamp(p / gate)) * 388);
+  const kw = (ease(clamp((p - spark) / (dawn - spark))) * 247.5).toFixed(1);
+  const hz = (ease(clamp(p / gate)) * 50).toFixed(1);
 
-  /* Transforms continus pilotés par le scroll (pas de simple on/off) */
-  const t0 = clamp(p / 0.15);                 // sortie du titre d'ouverture
+  /* Actes — transforms continus */
+  const t0 = clamp(p / 0.13);
   const o0 = 1 - ease(t0);
-  const gT = ease(clamp((p - HERO_SEQ.gate) / 0.1)); // entrée du titre gate
-  const endFade = ease(clamp((p - 0.93) / 0.07));    // fondu de fin
+  const act1 = ease(clamp((p - spark) / 0.06)) * (1 - ease(clamp((p - (chain - 0.06)) / 0.06)));
+  const act2 = ease(clamp((p - chain) / 0.06)) * (1 - ease(clamp((p - (gate - 0.05)) / 0.05)));
+  const gT = ease(clamp((p - gate) / 0.07)) * (1 - ease(clamp((p - (dawn - 0.03)) / 0.05)));
+  const dT = ease(clamp((p - dawn) / 0.09));
+  const isGold = p >= dawn - 0.02;
 
   return (
     <div
       ref={wrapRef}
       className="seq"
       style={{ height: `${HERO_SEQ.count * HERO_SEQ.scrollPerFrame}px` }}
-      aria-label="Le réseau solaire s'allume au défilement"
+      aria-label="Plan-séquence : de l'étincelle à l'aube dorée"
     >
       <div className="seq-sticky">
         <canvas ref={canvasRef} className="seq-canvas" />
@@ -49,48 +54,59 @@ export default function HeroSequence() {
           <span className="mono">CHARGEMENT DU RÉSEAU…</span>
         </div>
 
-        {/* HUD onduleur */}
-        <div className="hud hud-tl"><span>TENSION</span><strong>{volts} V</strong></div>
-        <div className="hud hud-tr"><span>PRODUCTION</span><strong>{kw} kWc</strong></div>
-        <div className="hud hud-bl"><span>FRÉQUENCE</span><strong>{hz} Hz</strong></div>
-        <div className="hud hud-br"><span>{SITE.city.toUpperCase()}</span><strong>36.8°N · 10.2°E</strong></div>
+        {/* HUD onduleur — passe en or à l'aube */}
+        <div className={`hud hud-tl ${isGold ? "hud-gold" : ""}`}><span>TENSION</span><strong>{volts} V</strong></div>
+        <div className={`hud hud-tr ${isGold ? "hud-gold" : ""}`}><span>PRODUCTION</span><strong>{kw} kWc</strong></div>
+        <div className={`hud hud-bl ${isGold ? "hud-gold" : ""}`}><span>FRÉQUENCE</span><strong>{hz} Hz</strong></div>
+        <div className={`hud hud-br ${isGold ? "hud-gold" : ""}`}><span>{SITE.city.toUpperCase()}</span><strong>36.8°N · 10.2°E</strong></div>
 
         <div className="seq-progress" aria-hidden="true">
-          <span style={{ transform: `scaleX(${p})` }} />
+          <span className={isGold ? "gold" : ""} style={{ transform: `scaleX(${p})` }} />
         </div>
 
-        {/* Titre d'ouverture — vole vers la caméra en avançant */}
+        {/* Ouverture — vole vers la caméra */}
         <div
           className="ovl on"
           style={{
             opacity: o0,
             transform: `translateY(${-t0 * 90}px) scale(${1 + t0 * 0.85})`,
-            pointerEvents: o0 < 0.05 ? "none" : undefined,
             visibility: o0 < 0.01 ? "hidden" : undefined,
           }}
         >
           <p className="eyebrow">{SITE.brand} · {SITE.brandSub}</p>
           <h1>L&rsquo;ÉNERGIE<br />DU SOLEIL.</h1>
-          <p className="scroll-hint">Faites défiler pour allumer le réseau ↓</p>
+          <p className="scroll-hint">Faites défiler pour réveiller le réseau ↓</p>
         </div>
 
-        {/* Compteur de propagation */}
-        <div className={`ovl ovl-low ${phase === 1 ? "on" : ""}`}>
-          <p className="mono-line">// le courant se propage — {Math.round(p * 100)} %</p>
+        {/* Acte 1 — l'étincelle */}
+        <div className="ovl ovl-low on" style={{ opacity: act1, visibility: act1 < 0.01 ? "hidden" : undefined }}>
+          <p className="mono-line">// une étincelle suffit</p>
         </div>
 
-        {/* Titre gate — punch d'ignition, lettre par lettre */}
+        {/* Acte 2 — la réaction en chaîne */}
+        <div className="ovl ovl-low on" style={{ opacity: act2, visibility: act2 < 0.01 ? "hidden" : undefined }}>
+          <p className="mono-line">// réaction en chaîne — {Math.round(clamp((p - chain) / (gate - chain)) * 100)} %</p>
+        </div>
+
+        {/* Embrasement */}
         <div
-          className={`ovl ${phase === 2 ? "on" : ""}`}
-          style={{
-            opacity: gT * (1 - endFade),
-            transform: `scale(${1.35 - gT * 0.35})`,
-          }}
+          className={`ovl ${p >= gate && p < dawn ? "on" : ""}`}
+          style={{ opacity: gT, transform: `scale(${1.35 - ease(clamp((p - gate) / 0.07)) * 0.35})` }}
         >
-          <h2 className="ignite">
-            <Ignite text="MAÎTRISÉE." />
-          </h2>
+          <h2 className="ignite"><Ignite text="MAÎTRISÉE." /></h2>
           <p className="ovl-sub">Chaque cellule connectée. Chaque watt compté.</p>
+        </div>
+
+        {/* Aube dorée */}
+        <div
+          className={`ovl ${p >= dawn ? "on" : ""}`}
+          style={{ opacity: dT, transform: `translateY(${(1 - dT) * 40}px)` }}
+        >
+          <p className="eyebrow eyebrow-gold">Acte final</p>
+          <h2 className="dawn-hero"><Ignite text="Et chaque aube," /><br /><Ignite text="votre toit produit." /></h2>
+          <a href="#contact" className="btn btn-sun" style={{ pointerEvents: dT > 0.5 ? "auto" : "none" }}>
+            Étudier mon projet
+          </a>
         </div>
       </div>
     </div>

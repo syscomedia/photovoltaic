@@ -408,3 +408,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   .grain { animation: none; }
   .ovl.on .ignite-ch { animation: none; opacity: 1; }
 }
+
+/* ================= Acte final doré ================= */
+.hud-gold strong { color: var(--sun); text-shadow: 0 0 10px rgba(255,194,75,0.55); }
+.seq-progress span.gold { background: linear-gradient(90deg, var(--sun), #ffe1a1); box-shadow: 0 0 12px rgba(255,194,75,0.8); }
+.eyebrow-gold { color: var(--sun); }
+.dawn-hero {
+  font-size: clamp(2.1rem, 6.4vw, 4.8rem); font-weight: 900; font-stretch: expanded;
+  line-height: 1.04; margin-bottom: 1.8rem;
+  background: linear-gradient(100deg, var(--white) 25%, var(--sun) 70%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.ovl.on .dawn-hero .ignite-ch { text-shadow: none; }
